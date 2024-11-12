@@ -72,8 +72,6 @@ jobs:
       # patch it, if it works then we're good
       - name: Patch base executable
         run: |
-          ls ./.
-          ls ./fa-python-binary-patcher
           echo '#define gitsha "${{ github.sha }}"' > workflow.cpp
           mkdir build
           python ./fa-python-binary-patcher/main.py "$(pwd)" clang++ ld g++
