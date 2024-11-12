@@ -65,13 +65,15 @@ jobs:
 
       # download base executable
       - name: Download base executable
-        run: curl -L "https://content.faforever.com/build/ForgedAlliance_base.exe" -o ForgedAlliance_base.exe
+        run: | 
+          curl -L "https://content.faforever.com/build/ForgedAlliance_base.exe" -o ForgedAlliance_base.exe
+          mv ForgedAlliance_base.exe ./fa-binary-patches/ForgedAlliance_base.exe
 
       # patch it, if it works then we're good
       - name: Patch base executable
         run: |
           ls ./fa-binary-patches
           ls ./fa-python-binary-patcher
-          echo "#define gitsha \"${{ github.sha }}\"" > "./fa-binary-patchesworkflow.cpp"
+          echo "#define gitsha \"${{ github.sha }}\"" > "./fa-binary-patches/workflow.cpp"
           mkdir build
           python ./fa-python-binary-patcher/main.py "./fa-binary-patches" clang++ ld g++
