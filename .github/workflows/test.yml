@@ -70,6 +70,8 @@ jobs:
       # patch it, if it works then we're good
       - name: Patch base executable
         run: |
-          echo "#define gitsha \"${{ github.sha }}\"" > workflow.cpp
+          ls ./fa-binary-patches
+          ls ./fa-python-binary-patcher
+          echo "#define gitsha \"${{ github.sha }}\"" > "./fa-binary-patchesworkflow.cpp"
           mkdir build
           python ./fa-python-binary-patcher/main.py "./fa-binary-patches" clang++ ld g++
