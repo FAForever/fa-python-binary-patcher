@@ -5,7 +5,7 @@ Install newest version [here](https://www.python.org/downloads/).
 
 # Compilers
 
-You will need GCC and Clang compilers.
+You will need GCC and Clang compilers and some components of Visual Studio (Yes, patching game engine that was originally built with Visual Studio requires it's components).
 
 ## Clang
 
