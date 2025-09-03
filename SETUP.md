@@ -13,7 +13,7 @@ Clang compiler installation:
 
 * Goto [github releases of llvm](https://github.com/llvm/llvm-project/releases)
 * Download latest one with **-x86_64-pc-windows-msvc** suffix
-* Unpack into preferred location
+* Install into preferred location
 * You need path to `/bin/clang++.exe`
 
 ## Visual Studio
