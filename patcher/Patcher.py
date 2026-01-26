@@ -137,7 +137,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.data*)"):
-            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
+            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split("(")[0].split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
