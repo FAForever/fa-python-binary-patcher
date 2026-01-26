@@ -3,19 +3,14 @@ from .COFFData import COFFData, COFFSect
 import os
 from pathlib import Path
 import re
+import json
 from typing import Optional
 import struct
 import itertools
 from patcher import Hook
+from .Config import Config
 
-CLANG_FLAGS = " ".join(["-pipe -m32 -Os -nostdlib -Werror -masm=intel -std=c++20 -march=core2 -c",
-                        ])
 
-GCC_FLAGS = " ".join(["-pipe -m32 -Os -fno-exceptions -nostdlib -nostartfiles -fpermissive -masm=intel -std=c++20 -march=core2 -mfpmath=both",
-                      ])
-
-GCC_FLAGS_ASM = " ".join(["-pipe -m32 -Os -fno-exceptions -nostdlib -nostartfiles -w -fpermissive -masm=intel -std=c++20 -march=core2 -mfpmath=both",
-                          ])
 SECT_SIZE = 0x80000
 
 ASM_RE = re.compile(r"(asm\(\"(0[xX][0-9a-fA-F]{1,8})\"\);)", re.IGNORECASE)
@@ -93,17 +88,6 @@ def create_sections_file(path: Path, address_map: dict[str, str]):
 OUTPUT_FORMAT(pei-i386)
 OUTPUT(section.pe)
     """
-    FUNC_NAMES = """
-_atexit  = 0xA8211E;
-__Znwj   = 0xA825B9;
-__ZdlPvj = 0x958C40;
-"__imp__GetModuleHandleA@4" = 0xC0F378;
-"__imp__GetProcAddress@8" = 0xC0F48C;
-"___CxxFrameHandler3" = 0xA8958C;
-"___std_terminate" = 0xA994FB; /*idk addr*/
-"??_7type_info@@6B@" = 0xD72A88;
-"__CxxThrowException@8" = 0x00A89950;
-    """
     SECTIONS = """
     SECTIONS {
         . = __image_base__ + 0x1000;
@@ -133,7 +117,6 @@ __ZdlPvj = 0x958C40;
 
     with open(path, "w") as f:
         f.write(HEADER)
-        f.write(FUNC_NAMES)
         for name, address in address_map.items():
             f.write(f"\"{name}\" = {address};\n")
         f.write(SECTIONS)
@@ -154,7 +137,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.data*)"):
-            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split("(")[0].split(" ")
+            items = SPACES_RE.sub(" ", line.strip()).split("(")[0].split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
@@ -171,7 +154,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.bss*)"):
-            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
+            items = SPACES_RE.sub(" ", line.strip()).split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
@@ -188,7 +171,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.rdata)"):
-            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
+            items = SPACES_RE.sub(" ", line.strip()).split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
@@ -308,10 +291,10 @@ def run_system(command: str) -> int:
     return os.system(command.replace("\n", " "))
 
 
-def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path, * args):
-    target_path = Path(target_folder)
+def patch(config_path):
+    config = Config.load_from_json(Path(config_path))
 
-    base_pe = PEData(target_path / "ForgedAlliance_base.exe")
+    base_pe = PEData(config.input_path)
     new_v_offset = 0
     new_f_offset = 0
 
@@ -324,50 +307,42 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
 
     new_v_offset = align(new_v_offset, base_pe.sectalign)
     new_f_offset = align(new_f_offset, base_pe.filealign)
-    print(f"Image base: {base_pe.imgbase + new_v_offset - 0x1000:x}")
+    image_base = base_pe.imgbase + new_v_offset - 0x1000
+    print(f"Image base: {image_base:x}")
 
-    section_folder_path = target_path / "section"
-    build_folder_path = target_path / "build"
+    section_folder_path = config.target_folder_path / "section"
+    include_folder_path = config.target_folder_path / "include"
+    hooks_folder_path = config.target_folder_path / "hooks"
+    build_folder_path = config.build_folder_path
 
     paths = find_patch_files(section_folder_path)
-
-    # files_contents = read_files_contents(f"{target_path}/section/", paths)
-    # files_contents, address_names = preprocess_lines(files_contents)
 
     with open(section_folder_path / "main.cpp", "w") as main_file:
         for path in paths:
             main_file.writelines(f"#include \"{path}\"\n")
-        # main_file.writelines(files_contents)
 
     function_addresses = {
-        name: name for name in scan_header_files(target_path)}
-
-    cxx_files_contents = read_files_contents(section_folder_path, list_files_at(
-        section_folder_path, "**/*.cxx", ["main.cxx"]))
-    cxx_files_contents, cxx_address_names = preprocess_lines(
-        cxx_files_contents)
+        name: name for name in scan_header_files(config.target_folder_path)}
 
     with open(section_folder_path / "main.cxx", "w") as main_file:
-        main_file.writelines(cxx_files_contents)
-
-    folders = scan_for_headers_in_section(section_folder_path)
-    includes = " ".join((f"-I ../section/{folder}/" for folder in folders))
+        for path in list_files_at(section_folder_path, "**/*.cxx", ["main.cxx"]):
+            main_file.writelines(f"#include \"{path}\"\n")
 
     if run_system(
-            f"""cd {build_folder_path} &
-            {clang_compiler_path} {CLANG_FLAGS}
-            -I ../include/ {includes}
-            ../section/main.cxx -o clangfile.o"""):
+            f"""{config.clang_path}
+            -c {" ".join(config.clang_flags)}
+            -I {include_folder_path} {section_folder_path / "main.cxx"}
+            -o {build_folder_path / "clangfile.o"}"""):
         raise Exception("Errors occurred during building of cxx files")
 
-    create_sections_file(target_path / "section.ld",
-                         function_addresses | cxx_address_names)
+    create_sections_file(build_folder_path / "section.ld",
+                         function_addresses | config.functions)
     if run_system(
-            f"""cd {build_folder_path} &
-            {gcc_compiler_path} {GCC_FLAGS}
-            -I ../include/ {includes}
-            -Wl,-T,../section.ld,--image-base,{base_pe.imgbase + new_v_offset - 0x1000},-s,-Map,sectmap.txt,-o,section.pe
-            ../section/main.cpp"""):
+            f""" cd {build_folder_path} &
+            {config.gcc_path} {" ".join(config.gcc_flags)}
+            -I {include_folder_path}
+            -Wl,-T,section.ld,--image-base,{image_base},-s,-Map,sectmap.txt,-o,section.pe
+            {section_folder_path / "main.cpp"}"""):
         raise Exception("Errors occurred during building of patch files")
 
     remove_files_at(build_folder_path, "**/*.o")
@@ -382,26 +357,26 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
             ])
             for name, address in addresses.items():
                 f.write(f"#define {name} {address}\n")
-    create_defines_file(target_path / "define.h", addresses)
+    create_defines_file(config.target_folder_path / "define.h", addresses)
 
     def generate_hook_files(folder_path: Path):
         for file_path in list_files_at(folder_path, "**/*.hook"):
-            hook = Hook. load_hook(folder_path/file_path)
+            hook = Hook.load_hook(folder_path/file_path)
             hook_path = file_path.replace(os.sep, "_") + ".cpp"
             print(f"Generating {hook_path}")
             with open(folder_path/hook_path, "w") as f:
                 f.write(hook.to_cpp())
 
-    generate_hook_files(target_path/"hooks")
+    generate_hook_files(config.target_folder_path/"hooks")
 
     if run_system(
             f"""cd {build_folder_path} &
-            {gcc_compiler_path} -c {GCC_FLAGS_ASM} ../hooks/*.cpp"""):
+            {config.gcc_path} -c {" ".join(config.asm_flags)} {hooks_folder_path / "*.cpp"}"""):
         raise Exception("Errors occurred during building of hooks files")
 
     hooks: list[COFFData] = []
     for path in list_files_at(build_folder_path, "**/*.o"):
-        coff_data = COFFData(build_folder_path / path, f"build/{path}")
+        coff_data = COFFData(build_folder_path / path, path)
         for sect in coff_data.sects:
             if len(sect.name) >= 8:
                 raise Exception(f"sect name too long {sect.name}")
@@ -416,10 +391,10 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
     ssize = section_pe.sects[-1].v_offset + \
         section_pe.sects[-1].v_size + section_pe.sects[0].v_offset
 
-    with open(target_path / "patch.ld", "w") as pld:
+    with open(build_folder_path / "patch.ld", "w") as pld:
         pld.writelines([
             "OUTPUT_FORMAT(pei-i386)\n",
-            "OUTPUT(build/patch.pe)\n",
+            "OUTPUT(patch.pe)\n",
         ])
 
         for name, address in addresses.items():
@@ -453,9 +428,10 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
             "  }\n",
             "}"
         ])
+
     if run_system(
-            f"""cd {target_path} &
-            {linker_path} -T patch.ld --image-base {base_pe.imgbase} -s -Map build/patchmap.txt"""):
+            f"""cd {build_folder_path} &
+            {config.linker_path} -T patch.ld --image-base {base_pe.imgbase} -s -Map patchmap.txt"""):
         raise Exception("Errors occurred during linking")
 
     base_file_data = bytearray(base_pe.data)
@@ -489,7 +465,7 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
     if SECT_SIZE > 0:
         if SECT_SIZE < exxt_sect.f_size:
             raise Exception(
-                f"Section size too small. Required: 0x{exxt_sect.f_size:x}")
+                f"Section size too small. Required: 0x{exxt_sect.f_size: x}")
 
         exxt_sect.v_size = SECT_SIZE
         exxt_sect.f_size = SECT_SIZE
@@ -501,10 +477,11 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
         replace_data(section_pe.data[s.f_offset:s.f_offset+s.f_size],
                      nsect.f_offset+s.v_offset-section_pe.sects[0].v_offset)
 
-    apply_sig_patches(target_path / "SigPatches.txt", base_file_data)
+    apply_sig_patches(config.target_folder_path /
+                      "SigPatches.txt", base_file_data)
 
     def save_new_base_data(data: bytearray):
-        with open(target_path / "ForgedAlliance_exxt.exe", "wb") as nf:
+        with open(config.output_path, "wb") as nf:
             sect_count = len(base_pe.sects)
             nf.write(data)
             nf.seek(base_pe.offset+0x6)
@@ -521,4 +498,4 @@ def patch(_, target_folder, clang_compiler_path, linker_path, gcc_compiler_path,
     save_new_base_data(base_file_data)
 
     remove_files_at(build_folder_path, "**/*.o")
-    remove_files_at(target_path/"hooks", "*.hook.cpp")
+    remove_files_at(hooks_folder_path, "*.hook.cpp")
