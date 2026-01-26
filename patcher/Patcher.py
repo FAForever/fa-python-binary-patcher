@@ -137,7 +137,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.data*)"):
-            items = SPACES_RE.sub(" ", line.strip()).split("(")[0].split(" ")
+            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
@@ -154,7 +154,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.bss*)"):
-            items = SPACES_RE.sub(" ", line.strip()).split(" ")
+            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
@@ -171,7 +171,7 @@ def parse_sect_map(file_path: Path) -> dict[str, str]:
 
         line = f.readline()
         while not line.startswith(" *(.rdata)"):
-            items = SPACES_RE.sub(" ", line.strip()).split(" ")
+            items = SPACES_RE.sub(" ", line.strip().replace("::", "__")).split(" ")
             if len(items) != 2 or items[1].startswith("?"):
                 line = f.readline()
                 continue
