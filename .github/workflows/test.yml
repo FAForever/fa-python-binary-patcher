@@ -41,13 +41,13 @@ jobs:
       # clone everything that we need
       - uses: actions/checkout@v4
         with:
-          repository: FAForever/FA-Binary-Patches
-          ref: 'master'
-          path: FA-Binary-Patches
+          path: .
 
       - uses: actions/checkout@v4
         with:
-          path: fa-python-binary-patcher
+          repository: FAForever/FA-Binary-Patches
+          ref: 'master'
+          path: FA-Binary-Patches
 
       # install everything that we need
       - uses: actions/setup-python@v5
