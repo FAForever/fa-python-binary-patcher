@@ -47,7 +47,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          path: .
+          path: fa-python-binary-patcher
 
       # install everything that we need
       - uses: actions/setup-python@v5
@@ -69,4 +69,4 @@ jobs:
       - name: Patch base executable
         run: |
           mkdir FA-Binary-Patches/build
-          python ./fa-python-binary-patcher/main.py "$(pwd)/config_example.json"
+          cd fa-python-binary-patcher & python main.py config_example.json
