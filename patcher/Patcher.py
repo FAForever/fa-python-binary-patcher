@@ -267,7 +267,8 @@ def run_system(template: Template) -> int:
         else:
             value = part.value
             if isinstance(value, Path):
-                command.append(shlex.quote(str(value)))
+                s_value = str(value)
+                command.append(f"\"{value}\"" if ' ' in value else value)
             else:
                 command.append(value)
     command = "".join(command)
