@@ -440,7 +440,7 @@ def patch(config_path):
     if SECT_SIZE > 0:
         if SECT_SIZE < exxt_sect.f_size:
             raise Exception(
-                f"Section size too small. Required: 0x{exxt_sect.f_size: x}")
+                f"Section size too small. Required: 0x{exxt_sect.f_size:x}")
 
         exxt_sect.v_size = SECT_SIZE
         exxt_sect.f_size = SECT_SIZE
