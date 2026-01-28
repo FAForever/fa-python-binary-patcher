@@ -269,7 +269,7 @@ def run_system(template: Template) -> int:
             if isinstance(value, Path):
                 command.append(shlex.quote(str(value)))
             else:
-                command.append(part)
+                command.append(value)
     command = "".join(command)
     print(command)
     return os.system(command.replace("\n", " "))
