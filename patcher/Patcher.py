@@ -15,8 +15,6 @@ from string.templatelib import Template
 SECT_SIZE = 0x80000
 
 ASM_RE = re.compile(r"(asm\(\"(0[xX][0-9a-fA-F]{1,8})\"\);)", re.IGNORECASE)
-CALL_RE = re.compile(
-    r"((call|jmp|je|jne)\s+(0[xX][0-9a-fA-F]{1,8}))", re.IGNORECASE)
 SPACES_RE = re.compile(" +")
 
 
@@ -57,32 +55,6 @@ def read_files_contents(dir_path: Path, paths: list[str]) -> dict[str, list[str]
     return files_contents
 
 
-def preprocess_lines(files_contents: dict[str, list[str]]) -> tuple[list[str], dict[str, str]]:
-    new_lines = []
-    address_names = {}
-    for file_name, contents in files_contents.items():
-        file_lines = []
-        file_addresses = {}
-        for line in contents:
-            matches = CALL_RE.finditer(line)
-            new_line = line
-            for match in matches:
-                full_s = match.group(0)
-                address = match.group(3)
-                address_name = "_" + address[1::]
-                s_start, s_end = match.span()
-                file_addresses[address_name] = address
-                new_line = new_line[:s_start] + \
-                    full_s.replace(address, address_name) + new_line[s_end:]
-            file_lines.append(new_line)
-        if len(file_addresses) == 0:
-            new_lines.append(f"#include \"{file_name}\"\n")
-        else:
-            new_lines.extend(file_lines)
-            address_names |= file_addresses
-    return new_lines, address_names
-
-
 def create_sections_file(path: Path, address_map: dict[str, str]):
 
     HEADER = """
@@ -121,12 +93,6 @@ OUTPUT(section.pe)
         for name, address in address_map.items():
             f.write(f"\"{name}\" = {address};\n")
         f.write(SECTIONS)
-
-
-def create_cxx_sections_file(path, address_map):
-    with open(path, "w") as f:
-        for name, address in address_map.items():
-            f.write(f"\"{name}\" = {address};\n")
 
 
 def parse_sect_map(file_path: Path) -> dict[str, str]:
