@@ -268,7 +268,7 @@ def run_system(template: Template) -> int:
             value = part.value
             if isinstance(value, Path):
                 s_value = str(value)
-                command.append(f"\"{value}\"" if ' ' in value else value)
+                command.append(f"\"{s_value}\"" if ' ' in s_value else s_value)
             else:
                 command.append(value)
     command = "".join(command)
