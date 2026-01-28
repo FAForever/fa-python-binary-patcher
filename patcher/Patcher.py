@@ -266,7 +266,10 @@ def run_system(template: Template) -> int:
             command.append(part)
         else:
             value = part.value
-            command.append(shlex.quote(str(value)))
+            if isinstance(value, Path):
+                command.append(shlex.quote(str(value)))
+            else:
+                command.append(part)
     command = "".join(command)
     print(command)
     return os.system(command.replace("\n", " "))
