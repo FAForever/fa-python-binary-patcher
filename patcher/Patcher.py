@@ -266,11 +266,11 @@ def run_system(template: Template) -> int:
             command.append(part)
         else:
             value = part.value
+            s_value = str(value)
             if isinstance(value, Path):
-                s_value = str(value)
                 command.append(f"\"{s_value}\"" if ' ' in s_value else s_value)
             else:
-                command.append(value)
+                command.append(s_value)
     command = "".join(command)
     print(command)
     return os.system(command.replace("\n", " "))
