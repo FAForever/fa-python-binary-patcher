@@ -12,7 +12,7 @@ You will need GCC and Clang compilers and some components of Visual Studio (Yes,
 Clang compiler installation:
 
 * Goto [github releases of llvm](https://github.com/llvm/llvm-project/releases)
-* Download latest one with **-x86_64-pc-windows-msvc** suffix
+* Download latest one with **-x86_64-pc-windows-msvc** suffix (or installer **-win64.exe**)
 * Install into preferred location
 * You need path to `/bin/clang++.exe`
 
@@ -20,7 +20,7 @@ Clang compiler installation:
 
 * Goto [Visual Studio]( https://visualstudio.microsoft.com) official website
 * Download latest version and install it
-* Via *Visual Studio Installer* install **C++ x64/x86 build tools** (althrough I'm not sure if this is only one needed component, I'd suggest installing 'Desktop development with C++')
+* Via *Visual Studio Installer* install 'Desktop development with C++'
 
 ## GCC
 
