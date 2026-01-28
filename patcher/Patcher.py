@@ -10,6 +10,8 @@ import itertools
 from patcher import Hook
 from .Config import Config
 from string.templatelib import Template
+import shlex
+
 
 
 SECT_SIZE = 0x80000
@@ -255,7 +257,8 @@ def scan_for_headers_in_section(sections_path: Path):
 
 def run_system(template: Template) -> int:
     if not isinstance(template, Template):
-        raise Exception("Not a template")
+        raise TypeError("Expected Template, got " + type(template).__name__)
+
 
     command = []
     for part in template:
@@ -263,10 +266,7 @@ def run_system(template: Template) -> int:
             command.append(part)
         else:
             value = part.value
-            if isinstance(value, Path) and ' ' in str(value):
-                command.append(f"\"{value}\"")
-            else:
-                command.append(str(value))
+            command.append(shlex.quote(str(value)))
     command = "".join(command)
     print(command)
     return os.system(command.replace("\n", " "))
