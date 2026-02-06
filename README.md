@@ -17,7 +17,7 @@ config structure:
 ```json
 {
     // path to target folder. Can be either relative or absolute.
-    // relative path is made of relative path of config file.
+    // if relative path then it will be {config path}/{target_folder_path}
     "target_folder_path": "FA-Binary-Patches",
     // path to build folder. Defaults to "{target_folder_path}/build"
     "build_folder_path": null,
