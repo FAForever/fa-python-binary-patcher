@@ -1,7 +1,7 @@
 # Python
 
 To patch an exe you with Python patcher you obviously need Python interpreter.
-Install newest version [here](https://www.python.org/downloads/).
+Install newest version [here](https://www.python.org/downloads/) (At least 3.14). 
 
 # Compilers
 

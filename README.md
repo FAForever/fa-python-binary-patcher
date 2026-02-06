@@ -33,18 +33,18 @@ To apply patcher on patch files run this command:
 Versions of compilers and linkers used.
 
 clang++ compiler: 
-* version 18.1.8
+* clang version 21.1.0
 * Target: x86_64-pc-windows-msvc
 * Thread model: posix
 
 ld linker:
-* GNU ld (GNU Binutils) 2.40
+* GNU ld (GNU Binutils) 2.39
 
 g++ compiler:
-* g++ (Rev6, Built by MSYS2 project) 13.1.0
+* g++ (i686-posix-dwarf-rev0, Built by MinGW-Builds project) 13.2.0      
 
 python:
-* 3.12.4
+* 3.14.2
 
 # HumanUserCalls.py
 
