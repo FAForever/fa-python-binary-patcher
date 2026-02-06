@@ -11,7 +11,69 @@ See [SETUP.md](./SETUP.md).
 
 To apply patcher on patch files run this command:
 
-`python main.py [path to folder with patches] [path to clang++ executable] [path to linker executable (ld)] [path to g++ executable]`
+`python main.py [path to config file]`
+
+config structure:
+```json
+{
+    // path to target folder. Can be either relative or absolute.
+    // relative path is made of relative path of config file.
+    "target_folder_path": "FA-Binary-Patches",
+    // path to build folder. Defaults to "{target_folder_path}/build"
+    "build_folder_path": null,
+    // names of input and output files
+    "input_name": "ForgedAlliance_base.exe",
+    "output_name": "ForgedAlliance_exxt.exe",
+    // path to clang++ compiler. Defaults to "clang++"
+    "clang": "clang++.exe",
+    // path to g++ compiler. Defaults to "g++"
+    "gcc": "g++.exe",
+    // path to linker. Defaults to "ld"
+    "linker": "ld.exe",
+    // flags for compilers
+    "clang_flags": [
+        "-pipe",
+        "-m32",
+        "-O3",
+        "-nostdlib",
+        "-Werror",
+        "-masm=intel",
+        "-std=c++20",
+        "-march=core2"
+    ],
+    "gcc_flags": [
+        "-pipe",
+        "-m32",
+        "-Os",
+        "-fno-exceptions",
+        "-nostdlib",
+        "-nostartfiles",
+        "-fpermissive",
+        "-masm=intel",
+        "-std=c++20",
+        "-march=core2",
+        "-mfpmath=both"
+    ],
+    "asm_flags": [
+        "-pipe",
+        "-m32",
+        "-Os",
+        "-fno-exceptions",
+        "-nostdlib",
+        "-nostartfiles",
+        "-w",
+        "-fpermissive",
+        "-masm=intel",
+        "-std=c++20",
+        "-march=core2",
+        "-mfpmath=both"
+    ],
+    // function names and their addresses used for linker script
+    "functions": {
+        "_memset": "0xA89110",
+    }
+}
+```
 
 ## Patches folder structure
 
